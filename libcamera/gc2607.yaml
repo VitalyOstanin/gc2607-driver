@@ -1,0 +1,51 @@
+# SPDX-License-Identifier: CC0-1.0
+#
+# libcamera SoftISP tuning file for GalaxyCore GC2607 (Huawei MateBook X Pro 2024).
+#
+# BlackLevel.blackLevel:
+#   Sensor optical-black pedestal pinned deterministically (auto-estimation
+#   from the luma histogram is disabled when this key is present).
+#   GC2607 pedestal = 64 in 10-bit raw = 64<<6 = 4096 in the 16-bit scale that
+#   blc.cpp expects (it applies value>>8 internally, yielding 16 in 8-bit).
+#
+# Ccm.ccms:
+#   Colour correction matrices from the camera's .aiqb tuning file (Intel CMC
+#   advanced colour matrices record), five reference correlated colour
+#   temperatures; libcamera interpolates between them by the AWB-estimated
+#   temperature. Each matrix is row-major, rows summing to ~1.0
+#   (luminance-preserving).
+#
+# No Agc algorithm: exposure and gain are driven externally (the sensor
+# sub-device is written directly by the project's own AE). Enabling libcamera's
+# SoftISP Agc here makes it fight that controller and periodically over-expose.
+%YAML 1.1
+---
+version: 1
+algorithms:
+  - BlackLevel:
+      blackLevel: 4096
+  - Awb:
+  - Ccm:
+      ccms:
+        - ct: 2963
+          ccm: [ 1.791725, -0.584244, -0.207481,
+                 -0.456043, 1.826154, -0.37011,
+                 -0.222971, -1.129576, 2.352547 ]
+        - ct: 3803
+          ccm: [ 2.09485, -0.946784, -0.148065,
+                 -0.38982, 1.728379, -0.338559,
+                 -0.117032, -0.681227, 1.798259 ]
+        - ct: 4049
+          ccm: [ 2.520147, -1.418277, -0.101871,
+                 -0.446844, 1.683885, -0.237041,
+                 -0.094111, -0.677053, 1.771164 ]
+        - ct: 4779
+          ccm: [ 2.056245, -0.900162, -0.156083,
+                 -0.336227, 1.777015, -0.440788,
+                 -0.09822, -0.653623, 1.751843 ]
+        - ct: 6426
+          ccm: [ 2.177695, -1.057335, -0.12036,
+                 -0.303709, 1.783072, -0.479363,
+                 -0.094608, -0.533727, 1.628335 ]
+  - Adjust:
+...

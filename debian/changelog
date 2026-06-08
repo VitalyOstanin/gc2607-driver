@@ -1,0 +1,5 @@
+gc2607-driver (1.0) unstable; urgency=medium
+
+  * Initial DKMS packaging for Debian/Ubuntu.
+
+ -- Vitaly Ostanin <vitaly.ostanin@gmail.com>  Mon, 08 Jun 2026 21:30:00 +0300

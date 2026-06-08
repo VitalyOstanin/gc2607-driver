@@ -10,3 +10,15 @@
 .tmp_versions/
 modules.order
 Module.symvers
+
+# Debian packaging build artefacts
+/debian/.debhelper/
+/debian/files
+/debian/*.substvars
+/debian/*.debhelper.log
+/debian/*.dkms
+/debian/debhelper-build-stamp
+/debian/gc2607-driver-dkms/
+/debian/gc2607-ipu-bridge-dkms/
+/debian/tmp/
+/debian/*.debhelper

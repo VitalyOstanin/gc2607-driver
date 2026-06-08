@@ -1,0 +1,16 @@
+#!/usr/bin/make -f
+# DKMS source package: ship the module sources, let DKMS build on the target.
+
+%:
+	dh $@ --with dkms
+
+# Nothing is compiled at package-build time; DKMS builds on the target host.
+override_dh_auto_configure:
+override_dh_auto_build:
+override_dh_auto_test:
+override_dh_auto_install:
+override_dh_auto_clean:
+
+# Use the in-tree dkms.conf instead of a duplicated debian/*.dkms copy.
+override_dh_dkms:
+	dh_dkms -- dkms.conf

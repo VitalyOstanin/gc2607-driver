@@ -1,0 +1,18 @@
+Source: gc2607-driver
+Section: kernel
+Priority: optional
+Maintainer: Vitaly Ostanin <vitaly.ostanin@gmail.com>
+Build-Depends: debhelper-compat (= 13), dh-dkms
+Standards-Version: 4.7.0
+Homepage: https://github.com/VitalyOstanin/gc2607-driver
+Rules-Requires-Root: no
+
+Package: gc2607-driver-dkms
+Architecture: all
+Depends: ${misc:Depends}
+Recommends: linux-headers-generic | linux-headers-amd64
+Description: V4L2 sub-device driver for the GalaxyCore GC2607 sensor (DKMS)
+ Out-of-tree V4L2 sub-device driver for the GalaxyCore GC2607 image sensor
+ found behind the Intel IPU6 on the Huawei MateBook X Pro 2024. The module is
+ built locally by DKMS for the running kernel and rebuilt automatically on
+ kernel upgrades.

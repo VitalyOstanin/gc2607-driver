@@ -52,18 +52,17 @@ otherwise the IPU6 will not establish the CSI-2 link.
 
 | Kernel  | Status                  | Reason |
 |---------|-------------------------|--------|
-| < 6.8   | does not build          | uses `v4l2_subdev_state_get_format()`, which is absent in 6.7 and earlier (verified against the v6.6/v6.7/v6.8 source trees) |
-| 6.8     | expected to build       | every kernel API the driver calls is present from 6.8; not compiled on 6.8 here |
+| < 7.0   | does not build          | uses `devm_v4l2_sensor_clk_get()` and other 7.0-era V4L2 helpers that are absent on earlier kernels (a build on 6.17 fails with an implicit-declaration error) |
 | 7.0     | verified                | built, loaded and streaming on the development machine |
-| > 7.0   | not guaranteed          | the V4L2 sub-device state API is renamed across releases; a future change may require a one-line update |
+| > 7.0   | not guaranteed          | the V4L2 sub-device / sensor-clock helper API may be renamed across releases; a future kernel may require a small update |
 
-The hard lower bound is set by the newest in-kernel API the driver uses. The
-other dependencies are older: the CCI register helpers (`cci_*`,
-`devm_cci_regmap_init_i2c`) date to ~6.5-6.6, and the fwnode/control/runtime-PM
-helpers are older still. There is no `BUILD_EXCLUSIVE_KERNEL` guard in
-`dkms.conf`: on an unsupported kernel the build fails with a clear
-missing-symbol error, and because the driver is a separate DKMS package its
-failure does not affect the rest of the camera stack.
+The hard lower bound is set by the newest in-kernel API the driver uses
+(`devm_v4l2_sensor_clk_get()`, a 7.0 helper). To keep DKMS from failing on other
+installed kernels, `dkms.conf` sets `BUILD_EXCLUSIVE_KERNEL="^7\."`: DKMS builds
+only on the 7.x series and skips non-matching kernels cleanly. Without it, the
+deb/autoinstall build would fail on a still-installed older kernel and abort the
+whole package installation. The driver is a separate DKMS package from
+`gc2607-ipu-bridge`, so a build problem on one does not affect the other.
 
 ## Build
 
@@ -112,6 +111,27 @@ sudo modprobe gc2607
 
 The module binds to the ACPI device `GCTI2607`. Installing under `updates/` by
 hand survives a reboot but **not** a kernel upgrade — use DKMS for that.
+
+### As a .deb package (Ubuntu / Debian)
+
+The repository carries Debian packaging (`debian/`) that wraps the DKMS flow in
+an apt-installable `gc2607-driver-dkms` package: it ships the sources to
+`/usr/src/gc2607-driver-1.0/`, runs `dkms install` on install and `dkms remove`
+on removal, and rebuilds the module on every kernel upgrade.
+
+Build and install from the GitHub source (tested on Ubuntu 26.04):
+
+```sh
+git clone https://github.com/VitalyOstanin/gc2607-driver
+cd gc2607-driver
+sudo apt install dh-dkms debhelper devscripts   # build dependencies, once
+dpkg-buildpackage -us -uc -b                     # -> ../gc2607-driver-dkms_1.0_all.deb
+sudo apt install ../gc2607-driver-dkms_1.0_all.deb
+```
+
+Remove with `sudo apt remove gc2607-driver-dkms`. The target machine needs the
+matching `linux-headers` package so DKMS can build the module; on Secure Boot
+systems DKMS signs the module with the enrolled MOK during installation.
 
 ## Dependencies in the stack
 

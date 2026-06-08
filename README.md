@@ -9,13 +9,14 @@ Bayer frames.
 ## Contents
 
 - [Purpose](#purpose)
-- [Register source](#register-source)
+- [Register sequences](#register-sequences)
 - [Sensor parameters](#sensor-parameters)
 - [Kernel compatibility](#kernel-compatibility)
 - [Build](#build)
 - [Install](#install)
 - [Dependencies in the stack](#dependencies-in-the-stack)
 - [Related projects](#related-projects)
+- [Acknowledgements](#acknowledgements)
 
 ## Purpose
 
@@ -125,3 +126,18 @@ For an end-to-end colour camera the driver alone is not enough; it depends on:
 
 - [gc2607-isp](../gc2607-isp) — software ISP that turns the raw Bayer stream into a colour webcam.
 - [ipu-bridge-gc2607](../ipu-bridge-gc2607) — the IPU-bridge patch that registers this sensor with the IPU6.
+
+## Acknowledgements
+
+Two earlier community drivers for the MateBook GC2607 were the starting
+reference for the Linux bring-up — the INT3472 power sequencing, the
+`ipu_bridge` registration, and the overall approach — and gave this effort its
+initial push. Thanks to their authors:
+
+- [abbood/gc2607-v4l2-driver](https://github.com/abbood/gc2607-v4l2-driver) — GC2607 V4L2 sub-device driver with INT3472 power and an `ipu_bridge` patch (Arch).
+- [antonbiluta/gc2607-driver](https://github.com/antonbiluta/gc2607-driver) — GC2607 driver and `ipu_bridge` patch (Fedora).
+
+This driver is an independent rewrite to the kernel camera-sensor guidelines
+(V4L2 CCI register access, runtime PM, `V4L2_CID_VBLANK` framerate control,
+async sub-device registration), with register sequences matching the factory
+configuration so the mode timing is correct.

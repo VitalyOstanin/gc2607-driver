@@ -11,6 +11,7 @@ Bayer frames.
 - [Purpose](#purpose)
 - [Register source](#register-source)
 - [Sensor parameters](#sensor-parameters)
+- [Kernel compatibility](#kernel-compatibility)
 - [Build](#build)
 - [Install](#install)
 - [Dependencies in the stack](#dependencies-in-the-stack)
@@ -46,6 +47,23 @@ The link frequency must match the value the IPU-bridge advertises for this
 sensor (see [ipu-bridge-gc2607](../ipu-bridge-gc2607)); otherwise the IPU6 will
 not establish the CSI-2 link.
 
+## Kernel compatibility
+
+| Kernel  | Status                  | Reason |
+|---------|-------------------------|--------|
+| < 6.8   | does not build          | uses `v4l2_subdev_state_get_format()`, which is absent in 6.7 and earlier (verified against the v6.6/v6.7/v6.8 source trees) |
+| 6.8     | expected to build       | every kernel API the driver calls is present from 6.8; not compiled on 6.8 here |
+| 7.0     | verified                | built, loaded and streaming on the development machine |
+| > 7.0   | not guaranteed          | the V4L2 sub-device state API is renamed across releases; a future change may require a one-line update |
+
+The hard lower bound is set by the newest in-kernel API the driver uses. The
+other dependencies are older: the CCI register helpers (`cci_*`,
+`devm_cci_regmap_init_i2c`) date to ~6.5-6.6, and the fwnode/control/runtime-PM
+helpers are older still. There is no `BUILD_EXCLUSIVE_KERNEL` guard in
+`dkms.conf`: on an unsupported kernel the build fails with a clear
+missing-symbol error, and because the driver is a separate DKMS package its
+failure does not affect the rest of the camera stack.
+
 ## Build
 
 Out-of-tree against the running kernel:
@@ -60,15 +78,39 @@ Requires the kernel headers/build tree for the target kernel.
 
 ## Install
 
+### DKMS (recommended)
+
+DKMS rebuilds the module automatically on every kernel upgrade. The package is
+defined by [dkms.conf](dkms.conf).
+
 ```sh
-sudo cp gc2607.ko /lib/modules/$(uname -r)/updates/
-sudo depmod -a
+sudo dkms add .
+sudo dkms install gc2607-driver/1.0
 sudo modprobe gc2607      # or it binds automatically on boot via acpi:GCTI2607
 ```
 
-The module binds to the ACPI device `GCTI2607`. Installing under `updates/`
-survives a reboot but **not** a kernel upgrade; packaging via DKMS is the
-intended long-term form.
+DKMS installs the module into the distribution's updates directory, which
+`depmod` searches ahead of the stock kernel tree. `dkms status` shows the build
+state per kernel; `sudo dkms remove gc2607-driver/1.0 --all` reverts it.
+
+If a copy was previously installed by hand (see below), remove it first so the
+manual file does not shadow the DKMS one:
+
+```sh
+sudo rm -f /lib/modules/$(uname -r)/updates/gc2607.ko
+sudo depmod -a
+```
+
+### Manual
+
+```sh
+sudo cp gc2607.ko /lib/modules/$(uname -r)/updates/
+sudo depmod -a
+sudo modprobe gc2607
+```
+
+The module binds to the ACPI device `GCTI2607`. Installing under `updates/` by
+hand survives a reboot but **not** a kernel upgrade — use DKMS for that.
 
 ## Dependencies in the stack
 

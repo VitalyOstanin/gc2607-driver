@@ -45,8 +45,8 @@ lanes, with a 19.2 MHz external clock.
 | Controls | `EXPOSURE`, `ANALOGUE_GAIN` (LUT index 0..16), `VBLANK`, `HBLANK`, `PIXEL_RATE`, `LINK_FREQ` |
 
 The link frequency must match the value the IPU-bridge advertises for this
-sensor (see [ipu-bridge-gc2607](../ipu-bridge-gc2607)); otherwise the IPU6 will
-not establish the CSI-2 link.
+sensor (see [gc2607-ipu-bridge](https://github.com/VitalyOstanin/gc2607-ipu-bridge));
+otherwise the IPU6 will not establish the CSI-2 link.
 
 ## Kernel compatibility
 
@@ -117,15 +117,15 @@ hand survives a reboot but **not** a kernel upgrade — use DKMS for that.
 
 For an end-to-end colour camera the driver alone is not enough; it depends on:
 
-1. The IPU-bridge knowing the sensor HID — see [ipu-bridge-gc2607](../ipu-bridge-gc2607).
+1. The IPU-bridge knowing the sensor HID — see [gc2607-ipu-bridge](https://github.com/VitalyOstanin/gc2607-ipu-bridge).
 2. The physical camera switch being on (otherwise the frame saturates).
 3. A consumer of the raw stream: libcamera SoftISP, or the project's own
-   [gc2607-isp](../gc2607-isp).
+   [gc2607-isp](https://github.com/VitalyOstanin/gc2607-isp).
 
 ## Related projects
 
-- [gc2607-isp](../gc2607-isp) — software ISP that turns the raw Bayer stream into a colour webcam.
-- [ipu-bridge-gc2607](../ipu-bridge-gc2607) — the IPU-bridge patch that registers this sensor with the IPU6.
+- [gc2607-isp](https://github.com/VitalyOstanin/gc2607-isp) — software ISP that turns the raw Bayer stream into a colour webcam.
+- [gc2607-ipu-bridge](https://github.com/VitalyOstanin/gc2607-ipu-bridge) — the IPU-bridge patch that registers this sensor with the IPU6.
 
 ## Acknowledgements
 

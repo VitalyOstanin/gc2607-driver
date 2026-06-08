@@ -94,6 +94,12 @@
 
 #define GC2607_MBUS_CODE		MEDIA_BUS_FMT_SGRBG10_1X10
 
+/* Driver/runtime parameters. */
+#define GC2607_XCLK_FREQ		19200000	/* external clock, Hz       */
+#define GC2607_REG_ADDR_BITS		16		/* CCI register address bits */
+#define GC2607_BOOT_DELAY_US		10000		/* settle after reset release */
+#define GC2607_AUTOSUSPEND_DELAY_MS	1000
+
 /* Gain look-up table: maps LUT index -> {again_h, again_l, dgain_int, dgain_frac}. */
 struct gc2607_gain_lut {
 	u8 again_h;
@@ -192,7 +198,7 @@ static int gc2607_power_on(struct device *dev)
 	gpiod_set_value_cansleep(gc2607->reset_gpio, 0);
 
 	/* Wait for the sensor's internal boot before any register access. */
-	usleep_range(10000, 11000);
+	usleep_range(GC2607_BOOT_DELAY_US, GC2607_BOOT_DELAY_US + 1000);
 
 	return 0;
 
@@ -252,8 +258,13 @@ static int gc2607_s_ctrl(struct v4l2_ctrl *ctrl)
 					 min_t(s64, gc2607->exposure->val, max));
 	}
 
-	/* Only touch hardware while the sensor is powered. */
-	if (!pm_runtime_get_if_in_use(dev))
+	/*
+	 * Only touch hardware while the sensor is powered.  A non-positive
+	 * return means no reference was taken (0: suspended; <0: runtime PM
+	 * disabled) -- skip the register writes and, crucially, do not call
+	 * pm_runtime_put() below for a reference we never acquired.
+	 */
+	if (pm_runtime_get_if_in_use(dev) <= 0)
 		return 0;
 
 	ret = 0;
@@ -288,7 +299,8 @@ static int gc2607_init_controls(struct gc2607 *gc2607)
 	struct v4l2_fwnode_device_properties props;
 	int ret;
 
-	ret = v4l2_ctrl_handler_init(hdl, 10);
+	/* 6 device controls + up to 2 fwnode properties (orientation, rotation). */
+	ret = v4l2_ctrl_handler_init(hdl, 8);
 	if (ret)
 		return ret;
 
@@ -602,6 +614,7 @@ out:
 
 static int gc2607_get_resources(struct gc2607 *gc2607, struct device *dev)
 {
+	unsigned long xclk_rate;
 	unsigned int i;
 	int ret;
 
@@ -609,6 +622,18 @@ static int gc2607_get_resources(struct gc2607 *gc2607, struct device *dev)
 	if (IS_ERR(gc2607->xclk))
 		return dev_err_probe(dev, PTR_ERR(gc2607->xclk),
 				     "failed to get clock\n");
+
+	/*
+	 * On ACPI platforms devm_v4l2_sensor_clk_get() registers a fixed clock
+	 * from the firmware "clock-frequency" property, so the reported rate
+	 * reflects what the platform supplies.  Validate it when known; a rate of
+	 * 0 means the provider does not report one, in which case trust firmware.
+	 */
+	xclk_rate = clk_get_rate(gc2607->xclk);
+	if (xclk_rate && xclk_rate != GC2607_XCLK_FREQ)
+		return dev_err_probe(dev, -EINVAL,
+				     "external clock %lu Hz, expected %u Hz\n",
+				     xclk_rate, GC2607_XCLK_FREQ);
 
 	for (i = 0; i < GC2607_NUM_SUPPLIES; i++)
 		gc2607->supplies[i].supply = gc2607_supply_names[i];
@@ -645,7 +670,7 @@ static int gc2607_probe(struct i2c_client *client)
 	v4l2_i2c_subdev_init(&gc2607->sd, client, &gc2607_subdev_ops);
 	gc2607->sd.internal_ops = &gc2607_internal_ops;
 
-	gc2607->regmap = devm_cci_regmap_init_i2c(client, 16);
+	gc2607->regmap = devm_cci_regmap_init_i2c(client, GC2607_REG_ADDR_BITS);
 	if (IS_ERR(gc2607->regmap))
 		return dev_err_probe(dev, PTR_ERR(gc2607->regmap),
 				     "failed to init CCI regmap\n");
@@ -691,7 +716,7 @@ static int gc2607_probe(struct i2c_client *client)
 	pm_runtime_set_active(dev);
 	pm_runtime_get_noresume(dev);
 	pm_runtime_enable(dev);
-	pm_runtime_set_autosuspend_delay(dev, 1000);
+	pm_runtime_set_autosuspend_delay(dev, GC2607_AUTOSUSPEND_DELAY_MS);
 	pm_runtime_use_autosuspend(dev);
 	pm_runtime_put_autosuspend(dev);
 
@@ -718,7 +743,7 @@ power_off:
 
 static void gc2607_remove(struct i2c_client *client)
 {
-	struct v4l2_subdev *sd = i2c_get_clientdata(client);
+	struct v4l2_subdev *sd = dev_get_drvdata(&client->dev);
 	struct gc2607 *gc2607 = to_gc2607(sd);
 	struct device *dev = &client->dev;
 

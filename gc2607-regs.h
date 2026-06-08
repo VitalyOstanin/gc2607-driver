@@ -45,11 +45,11 @@ static const struct cci_reg_sequence gc2607_init_1928x1088_30fps[] = {
 	{ CCI_REG8(0x0132), 0x01 },
 	{ CCI_REG8(0x031c), 0x93 },
 	{ CCI_REG8(0x0218), 0x00 },
-	{ CCI_REG8(0x0340), 0x04 },
+	{ CCI_REG8(0x0340), 0x04 },	/* VTS_A = 0x04e2 = 1250 (GC2607_VTS_DEFAULT) */
 	{ CCI_REG8(0x0341), 0xe2 },
 	{ CCI_REG8(0x0342), 0x0a },
 	{ CCI_REG8(0x0343), 0xb9 },
-	{ CCI_REG8(0x0220), 0x04 },
+	{ CCI_REG8(0x0220), 0x04 },	/* VTS_B = 0x04e2 = 1250 (GC2607_VTS_DEFAULT) */
 	{ CCI_REG8(0x0221), 0xe2 },
 	{ CCI_REG8(0x0219), 0x00 },
 	{ CCI_REG8(0x0af4), 0x2b },

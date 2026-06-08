@@ -111,8 +111,14 @@ static const struct cci_reg_sequence gc2607_init_1928x1088_30fps[] = {
 	{ CCI_REG8(0x0031), 0x80 },
 	{ CCI_REG8(0x0032), 0x80 },
 	{ CCI_REG8(0x0033), 0x80 },
-	{ CCI_REG8(0x0202), 0x06 },
-	{ CCI_REG8(0x0203), 0x38 },
+	/*
+	 * Exposure (0x0202/0x0203) = GC2607_EXPOSURE_DEFAULT (600 = 0x0258), to
+	 * match the V4L2 control default. start_streaming() overwrites this from
+	 * the control handler right after this table, so the value is not used as
+	 * is; it is kept consistent with the control model to avoid confusion.
+	 */
+	{ CCI_REG8(0x0202), 0x02 },
+	{ CCI_REG8(0x0203), 0x58 },
 	{ CCI_REG8(0x02b3), 0x00 },
 	{ CCI_REG8(0x02b4), 0x00 },
 	{ CCI_REG8(0x0208), 0x04 },

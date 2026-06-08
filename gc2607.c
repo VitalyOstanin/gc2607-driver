@@ -267,6 +267,11 @@ static int gc2607_s_ctrl(struct v4l2_ctrl *ctrl)
 	if (pm_runtime_get_if_in_use(dev) <= 0)
 		return 0;
 
+	/*
+	 * cci_write() takes the error accumulator as an in/out parameter and
+	 * becomes a no-op once it holds a non-zero value, so it must start at 0
+	 * for the EXPOSURE and VBLANK branches below.
+	 */
 	ret = 0;
 	switch (ctrl->id) {
 	case V4L2_CID_EXPOSURE:
@@ -474,13 +479,17 @@ static int gc2607_start_streaming(struct gc2607 *gc2607)
 	}
 
 	ret = __v4l2_ctrl_handler_setup(&gc2607->ctrl_handler);
-	if (ret)
+	if (ret) {
+		dev_err(dev, "failed to apply controls: %d\n", ret);
 		goto err;
+	}
 
 	ret = cci_multi_reg_write(gc2607->regmap, gc2607_stream_on,
 				  ARRAY_SIZE(gc2607_stream_on), NULL);
-	if (ret)
+	if (ret) {
+		dev_err(dev, "failed to write stream-on registers: %d\n", ret);
 		goto err;
+	}
 
 	return 0;
 

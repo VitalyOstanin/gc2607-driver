@@ -11,6 +11,9 @@
 modules.order
 Module.symvers
 
+# local project-check review reports (generated, not part of the source)
+/docs/reviews/
+
 # Debian packaging build artefacts
 /debian/.debhelper/
 /debian/files
